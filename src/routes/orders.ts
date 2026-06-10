@@ -111,7 +111,30 @@ export default async function orderRoutes(app: FastifyInstance) {
       notes: data.notes,
     })
 
-    reply.status(201).send(order)
+    let razorpayOrderId: string | null = null
+    try {
+      const Razorpay = (await import('razorpay')).default
+      const razorpay = new Razorpay({
+        key_id: process.env.RAZORPAY_KEY_ID!,
+        key_secret: process.env.RAZORPAY_KEY_SECRET!,
+      })
+
+      const rzpOrder = await razorpay.orders.create({
+        amount: Math.round(Number(order.total) * 100),
+        currency: 'INR',
+        receipt: order.order_number,
+      })
+      razorpayOrderId = rzpOrder.id
+
+      await app.db.query(`
+        INSERT INTO payments (order_id, amount, razorpay_order_id, status)
+        VALUES ($1, $2, $3, 'created')
+      `, [order.id, order.total, razorpayOrderId])
+    } catch (err) {
+      request.log.error(err, 'Failed to create Razorpay order')
+    }
+
+    reply.status(201).send({ ...order, razorpay_order_id: razorpayOrderId })
   })
 
   app.get('/', {
