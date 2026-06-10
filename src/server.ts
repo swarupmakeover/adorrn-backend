@@ -20,6 +20,7 @@ import sizeRoutes from './routes/sizes.js'
 import adminAnalyticsRoutes from './routes/admin/analytics.js'
 import adminDashboardRoutes from './routes/admin/dashboard.js'
 import razorpayWebhookRoutes from './webhooks/razorpay.js'
+import devRoutes from './routes/dev.js'
 
 const app = Fastify({ logger: true })
 
@@ -72,6 +73,7 @@ await app.register(sizeRoutes, { prefix: '/api/v1/sizes' })
 await app.register(adminAnalyticsRoutes, { prefix: '/api/v1/admin' })
 await app.register(adminDashboardRoutes, { prefix: '/api/v1/admin' })
 await app.register(razorpayWebhookRoutes, { prefix: '/api/v1/payments' })
+await app.register(devRoutes, { prefix: '/api/v1/dev' })
 
 app.get('/health', async () => ({ status: 'ok', timestamp: new Date().toISOString() }))
 
