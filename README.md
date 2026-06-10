@@ -116,6 +116,7 @@ Use **test/sandbox keys** for development:
 | `npm run typecheck` | Run TypeScript type checking |
 | `npm run db:migrate` | Run database schema migration |
 | `npm run db:seed` | Seed default data (homepage sections) |
+| `npm run docs:copy` | Fetch Swagger JSON from `/docs/json` and copy to clipboard via `wl-copy` |
 
 ---
 
