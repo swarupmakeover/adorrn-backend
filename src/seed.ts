@@ -87,10 +87,11 @@ async function seed() {
       }
     }
 
+    await pool.query('DELETE FROM product_variants WHERE product_id = $1', [prod.id])
     for (const v of p.variants) {
       await pool.query(`
         INSERT INTO product_variants (product_id, title, price, sku)
-        VALUES ($1, $2, $3, $4) ON CONFLICT DO NOTHING
+        VALUES ($1, $2, $3, $4)
       `, [prod.id, v.title, v.price, v.sku])
     }
   }

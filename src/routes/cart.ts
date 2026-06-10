@@ -1,8 +1,23 @@
 import { FastifyInstance } from 'fastify'
 import { CartService } from '../services/cart.service.js'
+import { verifyToken } from '@clerk/backend'
 
 export default async function cartRoutes(app: FastifyInstance) {
   const cartService = new CartService(app.db)
+
+  async function resolveUserIdFromRequest(request: any): Promise<string | undefined> {
+    const authHeader = request.headers.authorization
+    if (!authHeader) return undefined
+    const [scheme, token] = authHeader.split(' ')
+    if (scheme?.toLowerCase() !== 'bearer' || !token) return undefined
+    try {
+      const payload = await verifyToken(token, { secretKey: process.env.CLERK_SECRET_KEY })
+      const { rows: [u] } = await app.db.query('SELECT id FROM users WHERE clerk_id = $1', [payload.sub])
+      return u?.id
+    } catch {
+      return undefined
+    }
+  }
 
   app.get('/', {
     schema: {
@@ -14,17 +29,11 @@ export default async function cartRoutes(app: FastifyInstance) {
       },
     },
   }, async (request, reply) => {
-    const clerkId = request.userId
+    const userId = await resolveUserIdFromRequest(request)
     const { session_id } = request.query as any
 
-    if (!clerkId && !session_id) {
+    if (!userId && !session_id) {
       return reply.status(400).send({ error: 'Requires authentication or session_id' })
-    }
-
-    let userId: string | undefined
-    if (clerkId) {
-      const { rows: [u] } = await app.db.query('SELECT id FROM users WHERE clerk_id = $1', [clerkId])
-      userId = u?.id
     }
 
     const cart = await cartService.getOrCreateCart(userId, session_id)
@@ -46,15 +55,9 @@ export default async function cartRoutes(app: FastifyInstance) {
         },
       },
     },
-  },   async (request, reply) => {
+  }, async (request, reply) => {
     const { variant_id, quantity, cart_id, session_id } = request.body as any
-    const clerkId = request.userId
-
-    let userId: string | undefined
-    if (clerkId) {
-      const { rows: [user] } = await app.db.query('SELECT id FROM users WHERE clerk_id = $1', [clerkId])
-      userId = user?.id
-    }
+    const userId = await resolveUserIdFromRequest(request)
 
     let cart
     if (cart_id) {
