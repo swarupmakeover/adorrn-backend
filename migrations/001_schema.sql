@@ -105,7 +105,7 @@ CREATE TABLE IF NOT EXISTS product_variants (
   option3         TEXT,
   price           NUMERIC(10,2),
   sku             TEXT,
-  image_id        UUID REFERENCES product_images(id),
+  image_id        UUID REFERENCES product_images(id) ON DELETE SET NULL,
   is_active       BOOLEAN DEFAULT true,
   created_at      TIMESTAMPTZ DEFAULT now()
 );
@@ -148,7 +148,7 @@ CREATE TABLE IF NOT EXISTS product_size_stock (
 -- ─────────────────────────────────────────────
 CREATE TABLE IF NOT EXISTS inventory_logs (
   id                    UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-  product_size_stock_id UUID REFERENCES product_size_stock(id),
+  product_size_stock_id UUID REFERENCES product_size_stock(id) ON DELETE CASCADE,
   change                INT NOT NULL,
   reason                TEXT,
   reference_id          UUID,
@@ -335,7 +335,7 @@ CREATE TABLE IF NOT EXISTS order_status_history (
   order_id        UUID REFERENCES orders(id) ON DELETE CASCADE,
   status          TEXT NOT NULL,
   note            TEXT,
-  created_by      UUID REFERENCES users(id),
+  created_by      UUID REFERENCES users(id) ON DELETE SET NULL,
   created_at      TIMESTAMPTZ DEFAULT now()
 );
 
