@@ -25,8 +25,10 @@ import devRoutes from './routes/dev.js'
 
 const app = Fastify({ logger: true })
 
-const allowedOrigins = process.env.FRONTEND_URL?.split(',').map(s => s.trim()) || true
-await app.register(cors, { origin: allowedOrigins })
+await app.register(cors, {
+  origin: true,
+  credentials: true,
+})
 await app.register(multipart)
 
 await app.register(swagger, {
