@@ -1,17 +1,26 @@
 import fp from 'fastify-plugin'
 import { createClerkClient, verifyToken } from '@clerk/backend'
 
-const clerk = createClerkClient({ secretKey: process.env.CLERK_SECRET_KEY })
-
 export default fp(async (fastify) => {
+  const clerk = createClerkClient({ secretKey: process.env.CLERK_SECRET_KEY })
+
+  fastify.decorate('clerk', clerk)
+
   fastify.decorate('authenticate', async (request, reply) => {
-    const token = request.headers.authorization?.split(' ')[1]
-    if (!token) return reply.status(401).send({ error: 'Unauthorized' })
+    const authHeader = request.headers.authorization
+    if (!authHeader) return reply.status(401).send({ error: 'Missing Authorization header' })
+
+    const [scheme, token] = authHeader.split(' ')
+    if (scheme?.toLowerCase() !== 'bearer' || !token) {
+      return reply.status(401).send({ error: 'Authorization must be: Bearer <token>' })
+    }
+
     try {
       const payload = await verifyToken(token, { secretKey: process.env.CLERK_SECRET_KEY })
       request.userId = payload.sub
       request.userRole = (payload as any).metadata?.role
-    } catch {
+    } catch (err: any) {
+      request.log.warn({ err: err?.message || err, reason: err?.reason }, 'Token verification failed')
       reply.status(401).send({ error: 'Invalid token' })
     }
   })
@@ -23,3 +32,9 @@ export default fp(async (fastify) => {
     }
   })
 })
+
+declare module 'fastify' {
+  interface FastifyInstance {
+    clerk: ReturnType<typeof createClerkClient>
+  }
+}
