@@ -2,7 +2,10 @@ import 'dotenv/config'
 import { Pool } from 'pg'
 
 async function seed() {
-  const pool = new Pool({ connectionString: process.env.DATABASE_URL })
+  const pool = new Pool({
+    connectionString: process.env.DATABASE_URL,
+    ...(process.env.DATABASE_URL?.includes('neon.tech') ? { ssl: { rejectUnauthorized: false } } : {}),
+  })
 
   // ── Homepage Sections ──
   await pool.query(`
