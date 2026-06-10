@@ -68,10 +68,9 @@ export class OrderService {
       paramIndex++
     }
 
-    const join = search ? ' LEFT JOIN users u ON u.id = o.user_id' : ''
     const where = conditions.length ? `WHERE ${conditions.join(' AND ')}` : ''
-    const { rows: [{ count }] } = await this.db.query(`SELECT COUNT(*) FROM orders o${join} ${where}`, params)
-    const { rows } = await this.db.query(`SELECT o.*, u.name as customer_name, u.email as customer_email FROM orders o${join} ${where} ORDER BY o.created_at DESC LIMIT $${paramIndex++} OFFSET $${paramIndex}`, [...params, limit, offset])
+    const { rows: [{ count }] } = await this.db.query(`SELECT COUNT(*) FROM orders o LEFT JOIN users u ON u.id = o.user_id ${where}`, params)
+    const { rows } = await this.db.query(`SELECT o.*, u.name as customer_name, u.email as customer_email FROM orders o LEFT JOIN users u ON u.id = o.user_id ${where} ORDER BY o.created_at DESC LIMIT $${paramIndex++} OFFSET $${paramIndex}`, [...params, limit, offset])
     return { data: rows, total: parseInt(count), totalPages: Math.ceil(parseInt(count) / limit), page, limit }
   }
 
