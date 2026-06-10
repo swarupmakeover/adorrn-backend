@@ -36,7 +36,7 @@ export default async function devRoutes(app: FastifyInstance) {
     }
 
     const session = await app.clerk.sessions.createSession({ userId }) as any
-    const tokenResult = await app.clerk.sessions.getToken(session.id, 'default') as any
+    const tokenResult = await app.clerk.sessions.getToken(session.id, '') as any
     const jwt = tokenResult.jwt || tokenResult
 
     return {
