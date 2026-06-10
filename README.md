@@ -158,7 +158,8 @@ apps/api/
 │   │   ├── sizes.ts            # Size groups & sizes
 │   │   └── admin/
 │   │       ├── analytics.ts    # Revenue, top products, order stats
-│   │       └── dashboard.ts    # Order management, refunds
+│   │       ├── dashboard.ts    # Order management, refunds
+│   │       └── frontend.ts     # Dashboard, products, customers, reviews, coupons, homepage, settings, inventory
 │   └── webhooks/
 │       └── razorpay.ts         # Razorpay webhook receiver
 ├── .env.example                # Environment template
@@ -316,10 +317,77 @@ All endpoints are prefixed with `/api/v1`. Protected routes require `Authorizati
 
 | Method | Path | Auth | Description |
 |---|---|---|---|
-| GET | `/admin/orders` | Admin | All orders (filters, pagination) |
-| GET | `/admin/orders/:id` | Admin | Order detail |
+| GET | `/admin/orders` | Admin | All orders (filters: `status`, `search`, `page`, `limit`) |
+| GET | `/admin/orders/:id` | Admin | Order detail with items, history, payment |
 | PATCH | `/admin/orders/:id/status` | Admin | Update order status |
 | POST | `/admin/orders/:id/refund` | Admin | Issue Razorpay refund |
+
+### Admin — Dashboard
+
+| Method | Path | Auth | Description |
+|---|---|---|---|
+| GET | `/admin/dashboard/stats` | Admin | MTD revenue, orders, new customers, avg order value |
+| GET | `/admin/dashboard/revenue?period=` | Admin | Revenue over time (daily/weekly/monthly) |
+| GET | `/admin/dashboard/top-products` | Admin | Top 10 products by revenue |
+| GET | `/admin/dashboard/recent-orders` | Admin | Latest 10 orders |
+| GET | `/admin/dashboard/order-status` | Admin | Order status distribution |
+
+### Admin — Products
+
+| Method | Path | Auth | Description |
+|---|---|---|---|
+| GET | `/admin/products` | Admin | List products (`page`, `limit`, `search`, `is_active`) |
+| GET | `/admin/products/:id` | Admin | Single product with variants, images, collections |
+| POST | `/admin/products` | Admin | Create product with optional variants + collections |
+| PUT | `/admin/products/:id` | Admin | Update product, variants, collections |
+| DELETE | `/admin/products/:id` | Admin | Soft-delete (sets `is_active = false`) |
+
+### Admin — Customers
+
+| Method | Path | Auth | Description |
+|---|---|---|---|
+| GET | `/admin/customers` | Admin | List customers with order count + total spent (`page`, `limit`, `search`) |
+| GET | `/admin/customers/:id` | Admin | Customer detail with recent orders |
+
+### Admin — Reviews
+
+| Method | Path | Auth | Description |
+|---|---|---|---|
+| GET | `/admin/reviews` | Admin | All reviews (`status`, `page`, `limit`) |
+| PATCH | `/admin/reviews/:id/status` | Admin | Approve or reject review |
+| DELETE | `/admin/reviews/:id` | Admin | Delete review |
+
+### Admin — Coupons
+
+| Method | Path | Auth | Description |
+|---|---|---|---|
+| GET | `/admin/coupons` | Admin | List all coupons (`page`, `limit`) |
+| GET | `/admin/coupons/:id` | Admin | Single coupon detail |
+| POST | `/admin/coupons` | Admin | Create coupon |
+| PUT | `/admin/coupons/:id` | Admin | Update coupon |
+| DELETE | `/admin/coupons/:id` | Admin | Soft-delete coupon |
+| GET | `/admin/coupons/:id/usage` | Admin | Coupon usage history with customer info |
+
+### Admin — Homepage
+
+| Method | Path | Auth | Description |
+|---|---|---|---|
+| GET | `/admin/homepage` | Admin | All CMS data (hero slides, featured products, testimonials, sections) |
+| PUT | `/admin/homepage` | Admin | Update homepage CMS data |
+
+### Admin — Settings
+
+| Method | Path | Auth | Description |
+|---|---|---|---|
+| GET | `/admin/settings` | Admin | All store settings |
+| PUT | `/admin/settings` | Admin | Upsert store settings |
+
+### Admin — Inventory
+
+| Method | Path | Auth | Description |
+|---|---|---|---|
+| GET | `/admin/inventory` | Admin | Stock listing (`page`, `limit`, `low_stock`, `threshold`) |
+| PATCH | `/admin/inventory/:id` | Admin | Update stock quantity with log entry |
 
 ### Health
 
@@ -353,8 +421,8 @@ Same `Authorization` header, but additionally require the Clerk user to have `pu
 
 ## Database
 
-### Tables (21 total)
-`users`, `addresses`, `collections`, `products`, `product_collections`, `product_images`, `product_variants`, `size_groups`, `sizes`, `product_size_stock`, `inventory_logs`, `coupons`, `coupon_usages`, `carts`, `cart_items`, `orders`, `order_items`, `order_status_history`, `payments`, `reviews`, `review_images`, `review_helpful_votes`, `wishlists`, `hero_slides`, `homepage_featured_products`, `testimonials`, `homepage_sections`
+### Tables (22 total)
+`users`, `addresses`, `collections`, `products`, `product_collections`, `product_images`, `product_variants`, `size_groups`, `sizes`, `product_size_stock`, `inventory_logs`, `coupons`, `coupon_usages`, `carts`, `cart_items`, `orders`, `order_items`, `order_status_history`, `payments`, `reviews`, `review_images`, `review_helpful_votes`, `wishlists`, `hero_slides`, `homepage_featured_products`, `testimonials`, `homepage_sections`, `store_settings`
 
 ### Migration
 ```bash

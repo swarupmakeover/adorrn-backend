@@ -14,14 +14,15 @@ export default async function adminDashboardRoutes(app: FastifyInstance) {
         type: 'object',
         properties: {
           status: { type: 'string' },
+          search: { type: 'string' },
           page: { type: 'integer', default: 1 },
           limit: { type: 'integer', default: 20 },
         },
       },
     },
   }, async (request, reply) => {
-    const { status, page, limit } = request.query as any
-    const result = await orderService.listAll({ status, page, limit })
+    const { status, search, page, limit } = request.query as any
+    const result = await orderService.listAll({ status, search, page, limit })
     return result
   })
 

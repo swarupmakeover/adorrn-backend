@@ -20,6 +20,7 @@ import homepageRoutes from './routes/homepage.js'
 import sizeRoutes from './routes/sizes.js'
 import adminAnalyticsRoutes from './routes/admin/analytics.js'
 import adminDashboardRoutes from './routes/admin/dashboard.js'
+import adminFrontendRoutes from './routes/admin/frontend.js'
 import razorpayWebhookRoutes from './webhooks/razorpay.js'
 import devRoutes from './routes/dev.js'
 
@@ -76,6 +77,7 @@ await app.register(homepageRoutes, { prefix: '/api/v1/homepage' })
 await app.register(sizeRoutes, { prefix: '/api/v1/sizes' })
 await app.register(adminAnalyticsRoutes, { prefix: '/api/v1/admin' })
 await app.register(adminDashboardRoutes, { prefix: '/api/v1/admin' })
+await app.register(adminFrontendRoutes, { prefix: '/api/v1/admin' })
 await app.register(razorpayWebhookRoutes, { prefix: '/api/v1/payments' })
 await app.register(devRoutes, { prefix: '/api/v1/dev' })
 

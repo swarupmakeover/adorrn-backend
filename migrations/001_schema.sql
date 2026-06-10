@@ -406,6 +406,15 @@ CREATE TABLE IF NOT EXISTS wishlists (
 );
 
 -- ─────────────────────────────────────────────
+--  STORE SETTINGS
+-- ─────────────────────────────────────────────
+CREATE TABLE IF NOT EXISTS store_settings (
+  key             TEXT PRIMARY KEY,
+  value           JSONB NOT NULL DEFAULT '{}',
+  updated_at      TIMESTAMPTZ DEFAULT now()
+);
+
+-- ─────────────────────────────────────────────
 --  INDEXES
 -- ─────────────────────────────────────────────
 CREATE INDEX IF NOT EXISTS idx_products_slug ON products(slug);
