@@ -284,7 +284,7 @@ CREATE TABLE IF NOT EXISTS carts (
 CREATE TABLE IF NOT EXISTS cart_items (
   id              UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   cart_id         UUID REFERENCES carts(id) ON DELETE CASCADE,
-  variant_id      UUID REFERENCES product_variants(id),
+  variant_id      UUID REFERENCES product_variants(id) ON DELETE CASCADE,
   quantity        INT NOT NULL DEFAULT 1,
   added_at        TIMESTAMPTZ DEFAULT now()
 );
