@@ -18,10 +18,17 @@ export default fp(async (fastify) => {
     try {
       const payload = await verifyToken(token, { secretKey: process.env.CLERK_SECRET_KEY })
       request.userId = payload.sub
-      request.userRole = (payload as any).metadata?.role
     } catch (err: any) {
       console.error('[AUTH] Token verification failed:', err?.message || err, '| reason:', err?.reason, '| clerk_trace_id:', err?.clerk_trace_id)
-      reply.status(401).send({ error: 'Invalid token' })
+      return reply.status(401).send({ error: 'Invalid token' })
+    }
+
+    try {
+      const user = await clerk.users.getUser(request.userId)
+      request.userRole = user.publicMetadata?.role as string | undefined
+    } catch (err: any) {
+      console.error('[AUTH] Failed to fetch user metadata:', err?.message || err)
+      request.userRole = undefined
     }
   })
 
