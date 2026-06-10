@@ -316,7 +316,7 @@ CREATE TABLE IF NOT EXISTS orders (
 CREATE TABLE IF NOT EXISTS order_items (
   id              UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   order_id        UUID REFERENCES orders(id) ON DELETE CASCADE,
-  variant_id      UUID REFERENCES product_variants(id),
+  variant_id      UUID REFERENCES product_variants(id) ON DELETE SET NULL,
   size_id         UUID REFERENCES sizes(id),
   product_name    TEXT NOT NULL,
   variant_title   TEXT,
