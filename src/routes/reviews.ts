@@ -4,6 +4,25 @@ import { ReviewService } from '../services/review.service.js'
 export default async function reviewRoutes(app: FastifyInstance) {
   const reviewService = new ReviewService(app.db)
 
+  async function resolveUser(request: any, reply: any) {
+    const clerkId = request.userId
+    if (!clerkId) { reply.status(401).send({ error: 'Unauthorized' }); return }
+    let { rows: [user] } = await app.db.query('SELECT id FROM users WHERE clerk_id = $1', [clerkId])
+    if (!user) {
+      try {
+        const clerkUser = await app.clerk.users.getUser(clerkId)
+        const email = clerkUser.emailAddresses?.[0]?.emailAddress || ''
+        const name = [clerkUser.firstName, clerkUser.lastName].filter(Boolean).join(' ').trim() || null
+        const result = await app.db.query(
+          `INSERT INTO users (clerk_id, email, name, avatar_url, role) VALUES ($1, $2, $3, $4, 'customer') RETURNING id`,
+          [clerkId, email, name, clerkUser.imageUrl || null]
+        )
+        user = result.rows[0]
+      } catch { return reply.status(500).send({ error: 'Failed to resolve user' }) }
+    }
+    return user
+  }
+
   app.get('/product/:productId', {
     schema: {
       description: 'Get approved reviews for a product (paginated)',
@@ -38,6 +57,7 @@ export default async function reviewRoutes(app: FastifyInstance) {
   })
 
   app.post('/', {
+    preHandler: [app.authenticate],
     schema: {
       description: 'Submit a review (customer)',
       tags: ['Reviews'],
@@ -55,11 +75,11 @@ export default async function reviewRoutes(app: FastifyInstance) {
       },
     },
   }, async (request, reply) => {
-    const userId = request.userId
-    if (!userId) return reply.status(401).send({ error: 'Unauthorized' })
+    const user = await resolveUser(request, reply)
+    if (!user) return
 
     try {
-      const review = await reviewService.create({ ...request.body as any, user_id: userId })
+      const review = await reviewService.create({ ...request.body as any, user_id: user.id })
       reply.status(201).send(review)
     } catch (err: any) {
       reply.status(400).send({ error: err.message })
@@ -67,6 +87,7 @@ export default async function reviewRoutes(app: FastifyInstance) {
   })
 
   app.post('/:id/helpful', {
+    preHandler: [app.authenticate],
     schema: {
       description: 'Mark a review as helpful',
       tags: ['Reviews'],
@@ -77,11 +98,11 @@ export default async function reviewRoutes(app: FastifyInstance) {
       },
     },
   }, async (request, reply) => {
-    const userId = request.userId
-    if (!userId) return reply.status(401).send({ error: 'Unauthorized' })
+    const user = await resolveUser(request, reply)
+    if (!user) return
 
     try {
-      await reviewService.markHelpful((request.params as any).id, userId)
+      await reviewService.markHelpful((request.params as any).id, user.id)
       return { success: true }
     } catch (err: any) {
       reply.status(400).send({ error: err.message })

@@ -40,9 +40,15 @@ export default async function cartRoutes(app: FastifyInstance) {
         },
       },
     },
-  }, async (request, reply) => {
+  },   async (request, reply) => {
     const { variant_id, quantity, cart_id, session_id } = request.body as any
-    const userId = request.userId
+    const clerkId = request.userId
+
+    let userId: string | undefined
+    if (clerkId) {
+      const { rows: [user] } = await app.db.query('SELECT id FROM users WHERE clerk_id = $1', [clerkId])
+      userId = user?.id
+    }
 
     let cart
     if (cart_id) {
@@ -95,6 +101,7 @@ export default async function cartRoutes(app: FastifyInstance) {
   })
 
   app.post('/merge', {
+    preHandler: [app.authenticate],
     schema: {
       description: 'Merge guest cart into user cart on login',
       tags: ['Cart'],
@@ -106,11 +113,14 @@ export default async function cartRoutes(app: FastifyInstance) {
     },
   }, async (request, reply) => {
     const { session_id } = request.body as any
-    const userId = request.userId
-    if (!userId) return reply.status(401).send({ error: 'Unauthorized' })
+    const clerkId = request.userId
+    if (!clerkId) return reply.status(401).send({ error: 'Unauthorized' })
 
-    await cartService.mergeGuestCart(session_id, userId)
-    const cart = await cartService.getOrCreateCart(userId)
+    const { rows: [user] } = await app.db.query('SELECT id FROM users WHERE clerk_id = $1', [clerkId])
+    const userId = user?.id
+
+    if (userId) await cartService.mergeGuestCart(session_id, userId)
+    const cart = await cartService.getOrCreateCart(userId, session_id)
     return cart
   })
 }

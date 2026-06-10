@@ -1,19 +1,31 @@
 import { FastifyInstance } from 'fastify'
 
 export default async function userRoutes(app: FastifyInstance) {
+  async function resolveUser(request: any, reply: any) {
+    const userId = request.userId
+    if (!userId) return reply.status(401).send({ error: 'Unauthorized' })
+    let { rows: [user] } = await app.db.query('SELECT * FROM users WHERE clerk_id = $1', [userId])
+    if (!user) {
+      const clerkUser = await app.clerk.users.getUser(userId)
+      const email = clerkUser.emailAddresses?.[0]?.emailAddress || ''
+      const name = [clerkUser.firstName, clerkUser.lastName].filter(Boolean).join(' ').trim() || null
+      const result = await app.db.query(`
+        INSERT INTO users (clerk_id, email, name, avatar_url, role)
+        VALUES ($1, $2, $3, $4, $5) RETURNING *
+      `, [userId, email, name, clerkUser.imageUrl || null, 'customer'])
+      user = result.rows[0]
+    }
+    return user
+  }
+
   app.get('/me', {
     schema: {
       description: 'Get own profile',
       tags: ['Users'],
     },
   }, async (request, reply) => {
-    const userId = request.userId
-    if (!userId) return reply.status(401).send({ error: 'Unauthorized' })
-
-    const { rows: [user] } = await app.db.query(
-      'SELECT * FROM users WHERE clerk_id = $1', [userId]
-    )
-    if (!user) return reply.status(404).send({ error: 'User not found' })
+    const user = await resolveUser(request, reply)
+    if (!user) return
     return user
   })
 
@@ -31,12 +43,12 @@ export default async function userRoutes(app: FastifyInstance) {
       },
     },
   }, async (request, reply) => {
-    const userId = request.userId
-    if (!userId) return reply.status(401).send({ error: 'Unauthorized' })
+    const user = await resolveUser(request, reply)
+    if (!user) return
 
     const data = request.body as any
     const fields: string[] = []
-    const params: any[] = [userId]
+    const params: any[] = [user.clerk_id]
     let paramIndex = 2
 
     for (const [key, value] of Object.entries(data)) {
@@ -53,6 +65,7 @@ export default async function userRoutes(app: FastifyInstance) {
       )
       return rows[0]
     }
+    return user
   })
 
   app.get('/me/addresses', {
@@ -61,11 +74,8 @@ export default async function userRoutes(app: FastifyInstance) {
       tags: ['Users - Addresses'],
     },
   }, async (request, reply) => {
-    const userId = request.userId
-    if (!userId) return reply.status(401).send({ error: 'Unauthorized' })
-
-    const { rows: [user] } = await app.db.query('SELECT id FROM users WHERE clerk_id = $1', [userId])
-    if (!user) return reply.status(404).send({ error: 'User not found' })
+    const user = await resolveUser(request, reply)
+    if (!user) return
 
     const { rows } = await app.db.query(
       'SELECT * FROM addresses WHERE user_id = $1 ORDER BY is_default DESC, created_at ASC',
@@ -94,11 +104,8 @@ export default async function userRoutes(app: FastifyInstance) {
       },
     },
   }, async (request, reply) => {
-    const userId = request.userId
-    if (!userId) return reply.status(401).send({ error: 'Unauthorized' })
-
-    const { rows: [user] } = await app.db.query('SELECT id FROM users WHERE clerk_id = $1', [userId])
-    if (!user) return reply.status(404).send({ error: 'User not found' })
+    const user = await resolveUser(request, reply)
+    if (!user) return
 
     const data = request.body as any
     if (data.is_default) {
@@ -125,11 +132,8 @@ export default async function userRoutes(app: FastifyInstance) {
       },
     },
   }, async (request, reply) => {
-    const userId = request.userId
-    if (!userId) return reply.status(401).send({ error: 'Unauthorized' })
-
-    const { rows: [user] } = await app.db.query('SELECT id FROM users WHERE clerk_id = $1', [userId])
-    if (!user) return reply.status(404).send({ error: 'User not found' })
+    const user = await resolveUser(request, reply)
+    if (!user) return
 
     const { id } = request.params as any
     const data = request.body as any
@@ -168,11 +172,8 @@ export default async function userRoutes(app: FastifyInstance) {
       },
     },
   }, async (request, reply) => {
-    const userId = request.userId
-    if (!userId) return reply.status(401).send({ error: 'Unauthorized' })
-
-    const { rows: [user] } = await app.db.query('SELECT id FROM users WHERE clerk_id = $1', [userId])
-    if (!user) return reply.status(404).send({ error: 'User not found' })
+    const user = await resolveUser(request, reply)
+    if (!user) return
 
     const { id } = request.params as any
     await app.db.query('DELETE FROM addresses WHERE id = $1 AND user_id = $2', [id, user.id])
