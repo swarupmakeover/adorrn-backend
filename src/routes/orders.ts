@@ -111,7 +111,13 @@ export default async function orderRoutes(app: FastifyInstance) {
       notes: data.notes,
     })
 
+    const amountPaise = Math.round(Number(order.total) * 100)
     let razorpayOrderId: string | null = null
+
+    if (amountPaise < 100) {
+      return reply.status(400).send({ error: 'Order total must be at least ₹1' })
+    }
+
     try {
       const Razorpay = (await import('razorpay')).default
       const razorpay = new Razorpay({
@@ -120,7 +126,7 @@ export default async function orderRoutes(app: FastifyInstance) {
       })
 
       const rzpOrder = await razorpay.orders.create({
-        amount: Math.round(Number(order.total) * 100),
+        amount: amountPaise,
         currency: 'INR',
         receipt: order.order_number,
       })
@@ -132,6 +138,7 @@ export default async function orderRoutes(app: FastifyInstance) {
       `, [order.id, order.total, razorpayOrderId])
     } catch (err) {
       request.log.error(err, 'Failed to create Razorpay order')
+      return reply.status(502).send({ error: 'Payment gateway error. Please try again.' })
     }
 
     reply.status(201).send({ ...order, razorpay_order_id: razorpayOrderId })
