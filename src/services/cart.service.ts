@@ -28,7 +28,7 @@ export class CartService {
     if (!cart) return null
 
     const { rows: items } = await this.db.query(`
-      SELECT ci.*, pv.title as variant_title, pv.price as variant_price,
+      SELECT ci.*, pv.title as variant_title, pv.price as price,
         p.name as product_name, p.slug as product_slug,
         pi.url as image_url
       FROM cart_items ci

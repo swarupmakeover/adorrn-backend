@@ -34,6 +34,7 @@ export default fp(async (fastify) => {
 
   fastify.decorate('requireAdmin', async (request, reply) => {
     await fastify.authenticate(request, reply)
+    if (reply.sent) return
     if (request.userRole !== 'admin') {
       reply.status(403).send({ error: 'Forbidden' })
     }

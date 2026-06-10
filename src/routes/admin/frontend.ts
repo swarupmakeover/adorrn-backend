@@ -306,7 +306,7 @@ export default async function adminFrontendRoutes(app: FastifyInstance) {
     const { rows: [coupon] } = await app.db.query(`
       INSERT INTO coupons (code, description, type, value, applies_to, min_order_value, max_discount_amount, max_uses, max_uses_per_user, first_order_only, starts_at, expires_at, is_active, created_by)
       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14) RETURNING *
-    `, [data.code.toUpperCase(), data.description || null, data.type, data.value || null,
+    `, [(data.code || '').toUpperCase(), data.description || null, data.type, data.value || null,
       data.applies_to || 'order', data.min_order_value || 0, data.max_discount_amount || null,
       data.max_uses || null, data.max_uses_per_user || 1, data.first_order_only || false,
       data.starts_at || null, data.expires_at || null, data.is_active !== false, createdBy || null])
@@ -367,18 +367,40 @@ export default async function adminFrontendRoutes(app: FastifyInstance) {
     if (data.sections) {
       for (const s of data.sections) {
         await app.db.query('UPDATE homepage_sections SET title = $1, is_visible = $2, updated_at = now() WHERE key = $3',
-          [s.title, s.visible !== false, s.key])
+          [s.title, s.is_visible !== false, s.key])
       }
     }
     if (data.hero_slides) {
       await app.db.query('UPDATE hero_slides SET is_active = false WHERE is_active = true')
       for (const h of data.hero_slides) {
         if (h.id) {
-          await app.db.query('UPDATE hero_slides SET is_active = true, updated_at = now() WHERE id = $1', [h.id])
+          const { rowCount } = await app.db.query(`
+            UPDATE hero_slides SET title = $1, subtitle = $2, cta_label = $3, cta_url = $4,
+              desktop_image_url = $5, mobile_image_url = $6, overlay_opacity = $7,
+              position = $8, is_active = true, updated_at = now()
+            WHERE id = $9
+          `, [h.title || null, h.subtitle || null, h.cta_label || null, h.cta_url || null,
+            h.desktop_image_url || h.image_url || '', h.mobile_image_url || null,
+            h.overlay_opacity ?? 0.3, h.position || 0, h.id])
+          if (rowCount === 0) {
+            await app.db.query(`
+              INSERT INTO hero_slides (id, title, subtitle, cta_label, cta_url,
+                desktop_image_cloudinary_id, desktop_image_url, mobile_image_url,
+                overlay_opacity, position, is_active)
+              VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, true)
+            `, [h.id, h.title || null, h.subtitle || null, h.cta_label || null, h.cta_url || null,
+              'placeholder', h.desktop_image_url || h.image_url || '', h.mobile_image_url || null,
+              h.overlay_opacity ?? 0.3, h.position || 0])
+          }
         } else {
-          await app.db.query(
-            'INSERT INTO hero_slides (title, subtitle, cta_label, cta_url, desktop_image_cloudinary_id, desktop_image_url, position) VALUES ($1, $2, $3, $4, $5, $6, $7)',
-            [h.title || null, h.subtitle || null, h.cta_label || null, h.cta_url || null, 'placeholder', h.image_url || '', h.position || 0])
+          await app.db.query(`
+            INSERT INTO hero_slides (title, subtitle, cta_label, cta_url,
+              desktop_image_cloudinary_id, desktop_image_url, mobile_image_url,
+              overlay_opacity, position)
+            VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
+          `, [h.title || null, h.subtitle || null, h.cta_label || null, h.cta_url || null,
+            'placeholder', h.desktop_image_url || h.image_url || '', h.mobile_image_url || null,
+            h.overlay_opacity ?? 0.3, h.position || 0])
         }
       }
     }
@@ -389,10 +411,29 @@ export default async function adminFrontendRoutes(app: FastifyInstance) {
       }
     }
     if (data.testimonials) {
+      await app.db.query('UPDATE testimonials SET is_active = false')
       for (const t of data.testimonials) {
         if (t.id) {
-          await app.db.query("UPDATE testimonials SET author_name = $1, body = $2, source = $3, avatar_url = $4, updated_at = now() WHERE id = $5",
-            [t.author || t.author_name, t.quote || t.body, t.source || null, t.avatar_url || null, t.id])
+          const { rowCount } = await app.db.query(`
+            UPDATE testimonials SET author_name = $1, body = $2, source = $3,
+              avatar_url = $4, rating = $5, position = $6,
+              is_active = true, updated_at = now()
+            WHERE id = $7
+          `, [t.author || t.author_name, t.quote || t.body, t.source || null,
+            t.avatar_url || null, t.rating || null, t.position ?? 0, t.id])
+          if (rowCount === 0) {
+            await app.db.query(`
+              INSERT INTO testimonials (id, author_name, body, source, avatar_url, rating, position, is_active)
+              VALUES ($1, $2, $3, $4, $5, $6, $7, true)
+            `, [t.id, t.author || t.author_name, t.quote || t.body, t.source || null,
+              t.avatar_url || null, t.rating || null, t.position ?? 0])
+          }
+        } else {
+          await app.db.query(`
+            INSERT INTO testimonials (author_name, body, source, avatar_url, rating, position, is_active)
+            VALUES ($1, $2, $3, $4, $5, $6, true)
+          `, [t.author || t.author_name, t.quote || t.body, t.source || null,
+            t.avatar_url || null, t.rating || null, t.position ?? 0])
         }
       }
     }

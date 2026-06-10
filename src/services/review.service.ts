@@ -31,7 +31,16 @@ export class ReviewService {
       FROM reviews
       WHERE product_id = $1 AND status = 'approved'
     `, [productId])
-    return summary
+    return {
+      ...summary,
+      distribution: {
+        1: parseInt(summary.one_star) || 0,
+        2: parseInt(summary.two_star) || 0,
+        3: parseInt(summary.three_star) || 0,
+        4: parseInt(summary.four_star) || 0,
+        5: parseInt(summary.five_star) || 0,
+      },
+    }
   }
 
   async create(data: {

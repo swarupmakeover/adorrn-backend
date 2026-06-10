@@ -3,7 +3,7 @@ import { FastifyInstance } from 'fastify'
 export default async function userRoutes(app: FastifyInstance) {
   async function resolveUser(request: any, reply: any) {
     const userId = request.userId
-    if (!userId) return reply.status(401).send({ error: 'Unauthorized' })
+    if (!userId) { reply.status(401).send({ error: 'Unauthorized' }); return }
     let { rows: [user] } = await app.db.query('SELECT * FROM users WHERE clerk_id = $1', [userId])
     if (!user) {
       const clerkUser = await app.clerk.users.getUser(userId)

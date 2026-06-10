@@ -48,7 +48,7 @@ export class OrderService {
     const offset = (page - 1) * limit
     const { rows: [{ count }] } = await this.db.query('SELECT COUNT(*) FROM orders WHERE user_id = $1', [userId])
     const { rows } = await this.db.query('SELECT * FROM orders WHERE user_id = $1 ORDER BY created_at DESC LIMIT $2 OFFSET $3', [userId, limit, offset])
-    return { data: rows, total: parseInt(count), page, limit }
+    return { data: rows, total: parseInt(count), totalPages: Math.ceil(parseInt(count) / limit), page, limit }
   }
 
   async listAll(filters: { status?: string; search?: string; page?: number; limit?: number }) {
@@ -72,7 +72,7 @@ export class OrderService {
     const where = conditions.length ? `WHERE ${conditions.join(' AND ')}` : ''
     const { rows: [{ count }] } = await this.db.query(`SELECT COUNT(*) FROM orders o${join} ${where}`, params)
     const { rows } = await this.db.query(`SELECT o.*, u.name as customer_name, u.email as customer_email FROM orders o${join} ${where} ORDER BY o.created_at DESC LIMIT $${paramIndex++} OFFSET $${paramIndex}`, [...params, limit, offset])
-    return { data: rows, total: parseInt(count), page, limit }
+    return { data: rows, total: parseInt(count), totalPages: Math.ceil(parseInt(count) / limit), page, limit }
   }
 
   async updateStatus(id: string, status: string, note?: string, adminId?: string) {
