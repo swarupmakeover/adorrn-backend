@@ -19,6 +19,7 @@ export default async function userRoutes(app: FastifyInstance) {
   }
 
   app.get('/me', {
+    preHandler: [app.authenticate],
     schema: {
       description: 'Get own profile',
       tags: ['Users'],
@@ -30,6 +31,7 @@ export default async function userRoutes(app: FastifyInstance) {
   })
 
   app.patch('/me', {
+    preHandler: [app.authenticate],
     schema: {
       description: 'Update own profile',
       tags: ['Users'],
@@ -69,6 +71,7 @@ export default async function userRoutes(app: FastifyInstance) {
   })
 
   app.get('/me/addresses', {
+    preHandler: [app.authenticate],
     schema: {
       description: 'List own addresses',
       tags: ['Users - Addresses'],
@@ -85,6 +88,7 @@ export default async function userRoutes(app: FastifyInstance) {
   })
 
   app.post('/me/addresses', {
+    preHandler: [app.authenticate],
     schema: {
       description: 'Add a new address',
       tags: ['Users - Addresses'],
@@ -122,6 +126,7 @@ export default async function userRoutes(app: FastifyInstance) {
   })
 
   app.patch('/me/addresses/:id', {
+    preHandler: [app.authenticate],
     schema: {
       description: 'Update an address',
       tags: ['Users - Addresses'],
@@ -162,6 +167,7 @@ export default async function userRoutes(app: FastifyInstance) {
   })
 
   app.delete('/me/addresses/:id', {
+    preHandler: [app.authenticate],
     schema: {
       description: 'Delete an address',
       tags: ['Users - Addresses'],
