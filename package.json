@@ -9,7 +9,8 @@
     "start": "node dist/server.js",
     "db:migrate": "tsx src/migrate.ts",
     "db:seed": "tsx src/seed.ts",
-    "typecheck": "tsc --noEmit"
+    "typecheck": "tsc --noEmit",
+    "docs:copy": "curl -s http://localhost:3001/docs/json | wl-copy && echo 'Swagger docs copied to clipboard'"
   },
   "dependencies": {
     "@clerk/backend": "^1.24.0",
