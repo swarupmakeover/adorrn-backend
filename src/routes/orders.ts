@@ -16,11 +16,21 @@ export default async function orderRoutes(app: FastifyInstance) {
       const clerkUser = await app.clerk.users.getUser(clerkId)
       const email = clerkUser.emailAddresses?.[0]?.emailAddress || ''
       const name = [clerkUser.firstName, clerkUser.lastName].filter(Boolean).join(' ').trim() || null
-      const result = await app.db.query(`
-        INSERT INTO users (clerk_id, email, name, avatar_url, role)
-        VALUES ($1, $2, $3, $4, 'customer') RETURNING id
-      `, [clerkId, email, name, clerkUser.imageUrl || null])
-      user = result.rows[0]
+      const avatarUrl = clerkUser.imageUrl || null
+      const { rows: [existing] } = await app.db.query('SELECT id FROM users WHERE email = $1', [email])
+      if (existing) {
+        await app.db.query(
+          'UPDATE users SET clerk_id = $1, name = $2, avatar_url = $3, updated_at = now() WHERE email = $4',
+          [clerkId, name, avatarUrl, email]
+        )
+        user = existing
+      } else {
+        const result = await app.db.query(`
+          INSERT INTO users (clerk_id, email, name, avatar_url, role)
+          VALUES ($1, $2, $3, $4, 'customer') RETURNING id
+        `, [clerkId, email, name, avatarUrl])
+        user = result.rows[0]
+      }
     }
     return user.id
   }
