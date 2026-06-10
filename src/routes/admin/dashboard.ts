@@ -67,7 +67,13 @@ export default async function adminDashboardRoutes(app: FastifyInstance) {
   }, async (request, reply) => {
     const { id } = request.params as any
     const { status, note } = request.body as any
-    const order = await orderService.updateStatus(id, status, note, request.userId)
+    let adminUuid: string | undefined
+    const clerkId = request.userId
+    if (clerkId) {
+      const { rows: [u] } = await app.db.query('SELECT id FROM users WHERE clerk_id = $1', [clerkId])
+      adminUuid = u?.id
+    }
+    const order = await orderService.updateStatus(id, status, note, adminUuid)
     return order
   })
 

@@ -14,11 +14,17 @@ export default async function cartRoutes(app: FastifyInstance) {
       },
     },
   }, async (request, reply) => {
-    const userId = request.userId
+    const clerkId = request.userId
     const { session_id } = request.query as any
 
-    if (!userId && !session_id) {
+    if (!clerkId && !session_id) {
       return reply.status(400).send({ error: 'Requires authentication or session_id' })
+    }
+
+    let userId: string | undefined
+    if (clerkId) {
+      const { rows: [u] } = await app.db.query('SELECT id FROM users WHERE clerk_id = $1', [clerkId])
+      userId = u?.id
     }
 
     const cart = await cartService.getOrCreateCart(userId, session_id)

@@ -32,9 +32,15 @@ export default async function couponRoutes(app: FastifyInstance) {
     },
   }, async (request, reply) => {
     const data = request.body as any
+    let localUuid: string | undefined
+    const clerkId = request.userId
+    if (clerkId) {
+      const { rows: [u] } = await app.db.query('SELECT id FROM users WHERE clerk_id = $1', [clerkId])
+      localUuid = u?.id
+    }
     const result = await couponService.validate({
       ...data,
-      userId: request.userId,
+      userId: localUuid,
     })
     if (!result.valid) {
       return reply.status(400).send({ valid: false, errorCode: result.errorCode })
@@ -107,7 +113,13 @@ export default async function couponRoutes(app: FastifyInstance) {
     },
   }, async (request, reply) => {
     const data = request.body as any
-    const coupon = await couponService.create({ ...data, created_by: request.userId })
+    let createdBy: string | undefined
+    const clerkId = request.userId
+    if (clerkId) {
+      const { rows: [u] } = await app.db.query('SELECT id FROM users WHERE clerk_id = $1', [clerkId])
+      createdBy = u?.id
+    }
+    const coupon = await couponService.create({ ...data, created_by: createdBy })
     reply.status(201).send(coupon)
   })
 

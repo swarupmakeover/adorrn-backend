@@ -73,7 +73,7 @@ export default async function orderRoutes(app: FastifyInstance) {
     if (data.coupon_code) {
       const validation = await couponService.validate({
         code: data.coupon_code,
-        userId: request.userId,
+        userId: localUserId,
         cartItems: data.items.map((i: any) => ({
           variantId: i.variant_id,
           productId: i.product_id || i.variant_id,
