@@ -1,4 +1,4 @@
-import { Pool } from '@neondatabase/serverless'
+import { Pool } from 'pg'
 import type { FastifyRequest, FastifyReply } from 'fastify'
 
 declare module 'fastify' {

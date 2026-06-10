@@ -1,5 +1,5 @@
 import 'dotenv/config'
-import { Pool } from '@neondatabase/serverless'
+import { Pool } from 'pg'
 
 async function seed() {
   const pool = new Pool({ connectionString: process.env.DATABASE_URL })
